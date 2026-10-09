@@ -48,7 +48,7 @@ All seeded accounts use the password **`Password@123`**.
 | Patient                    | `kasane.teto@hospital.com`  |
 | User (delegate of Kasane Teto) | `hatsune.miku@hospital.com` |
 
-More accounts are listed in [`Data/DbSeeder.cs`](INFP-Proj/Data/DbSeeder.cs).
+More accounts are listed in the full documentation below
 
 ## Team
 | Member | Role |
@@ -57,3 +57,5 @@ More accounts are listed in [`Data/DbSeeder.cs`](INFP-Proj/Data/DbSeeder.cs).
 | Woo Kai Luo | System Integrator: CI/CD, Azure deployment, base app, Nurse and Admin dashboards |
 | Sadev Dulneth Weerasinghe | User dashboard |
 | Lim Si Wei Evan | Reception dashboard |
+
+Full Documentation: https://docs.google.com/document/d/1geHcBNCjiBTg1xl5I0L-AAOwUlozhEFZ/edit?usp=sharing&ouid=115079590539218700046&rtpof=true&sd=true
