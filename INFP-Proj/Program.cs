@@ -14,7 +14,7 @@ builder.Services.AddScoped<UserContextService>();
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<AppUser>, AdminRestricts>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("AuthConnectionString")));
+    options.UseInMemoryDatabase("INFPDb"));
 
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {
@@ -83,5 +83,17 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapRazorPages();
-
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    IServiceProvider services = scope.ServiceProvider;
+    try
+    {
+        await AppDbSeeder.SeedAsync(services);
+    }
+    catch (Exception ex)
+    {
+        ILogger<Program> startupLogger = services.GetRequiredService<ILogger<Program>>();
+        startupLogger.LogError(ex, "Database seeding failed at startup. The app will continue starting, but seeded data may be missing.");
+    }
+}
 app.Run();

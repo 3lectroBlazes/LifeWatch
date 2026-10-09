@@ -64,16 +64,6 @@ nunit-*.xml
 *.userosscache
 *.sln.docstates
 
-# Local config overrides (secrets)
-INFP-Proj/appsettings.*.local.json
-INFP-Proj/secrets.json
-INFP-Proj/appsettings.json
-INFP-Proj/appsettings.Development.json
-
-# Seed data (contains hardcoded accounts/credentials)
-INFP-Proj/Data/DbSeeder.cs
-INFP-Proj/Migrations
-
 # Publish profiles (deployment config; the .pubxml.user variant can carry
 # saved credentials/connection strings)
 INFP-Proj/Properties/PublishProfiles/

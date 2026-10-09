@@ -1,5 +1,3 @@
-using System.Data;
-using System.Data.Common;
 using INFP_Proj.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -112,71 +110,30 @@ namespace INFP_Proj.Services
 
         private async Task<ThresholdConfiguration> LoadThresholdConfigurationAsync()
         {
-            DbConnection connection = _context.Database.GetDbConnection();
-            bool closeWhenFinished = connection.State != ConnectionState.Open;
+            Thresholds? row = await _context.Thresholds
+                .AsNoTracking()
+                .OrderByDescending(t => t.ThresholdID)
+                .FirstOrDefaultAsync();
 
-            if (closeWhenFinished)
+            if (row == null)
             {
-                await connection.OpenAsync();
+                return CreateFallbackConfiguration();
             }
 
-            try
+            return new ThresholdConfiguration
             {
-                await using DbCommand command = connection.CreateCommand();
+                Systolic = CreateFixedRange(row.SBPLowerThreshold, row.SBPUpperThreshold, 90f, 120f),
 
-                command.CommandText = """
-                    SELECT TOP (1)
-                        CAST(SBPLowerThreshold AS real) AS SBPLowerThreshold,
-                        CAST(SBPUpperThreshold AS real) AS SBPUpperThreshold,
-                        CAST(DBPLowerThreshold AS real) AS DBPLowerThreshold,
-                        CAST(DBPUpperThreshold AS real) AS DBPUpperThreshold,
-                        CAST(HeartRateLowerPercentageThreshold AS real) AS HeartRateLowerPercentageThreshold,
-                        CAST(HeartRateUpperPercentageThreshold AS real) AS HeartRateUpperPercentageThreshold,
-                        CAST(RespiratoryRateLowerThreshold AS real) AS RespiratoryRateLowerThreshold,
-                        CAST(RespiratoryRateUpperPercentageThreshold AS real) AS RespiratoryRateUpperPercentageThreshold
-                    FROM dbo.Thresholds
-                    ORDER BY ThresholdID DESC;
-                    """;
+                Diastolic = CreateFixedRange(row.DBPLowerThreshold, row.DBPUpperThreshold, 60f, 80f),
 
-                await using DbDataReader reader = await command.ExecuteReaderAsync();
+                HeartRateLowerPercentage = ValidatePercentage(row.HeartRateLowerPercentageThreshold, 20f),
 
-                if (!await reader.ReadAsync())
-                {
-                    return CreateFallbackConfiguration();
-                }
+                HeartRateUpperPercentage = ValidatePercentage(row.HeartRateUpperPercentageThreshold, 20f),
 
-                return new ThresholdConfiguration
-                {
-                    Systolic = CreateFixedRange(
-                        ReadNullableFloat(reader, "SBPLowerThreshold"),
-                        ReadNullableFloat(reader, "SBPUpperThreshold"),
-                        90f, 120f),
+                RespiratoryLowerThreshold = ReadPositiveValueOrFallback(row.RespiratoryRateLowerThreshold, 12f),
 
-                    Diastolic = CreateFixedRange(
-                        ReadNullableFloat(reader, "DBPLowerThreshold"),
-                        ReadNullableFloat(reader, "DBPUpperThreshold"),
-                        60f, 80f),
-
-                    HeartRateLowerPercentage = ValidatePercentage(
-                        ReadNullableFloat(reader, "HeartRateLowerPercentageThreshold"), 20f),
-
-                    HeartRateUpperPercentage = ValidatePercentage(
-                        ReadNullableFloat(reader, "HeartRateUpperPercentageThreshold"), 20f),
-
-                    RespiratoryLowerThreshold = ReadPositiveValueOrFallback(
-                        ReadNullableFloat(reader, "RespiratoryRateLowerThreshold"), 12f),
-
-                    RespiratoryUpperPercentage = ValidatePercentage(
-                        ReadNullableFloat(reader, "RespiratoryRateUpperPercentageThreshold"), 25f)
-                };
-            }
-            finally
-            {
-                if (closeWhenFinished)
-                {
-                    await connection.CloseAsync();
-                }
-            }
+                RespiratoryUpperPercentage = ValidatePercentage(row.RespiratoryRateUpperPercentageThreshold, 25f)
+            };
         }
 
         private static ThresholdConfiguration CreateFallbackConfiguration()
@@ -190,12 +147,6 @@ namespace INFP_Proj.Services
                 RespiratoryLowerThreshold = 12f,
                 RespiratoryUpperPercentage = 25f
             };
-        }
-
-        private static float? ReadNullableFloat(DbDataReader reader, string columnName)
-        {
-            int index = reader.GetOrdinal(columnName);
-            return reader.IsDBNull(index) ? null : Convert.ToSingle(reader.GetValue(index));
         }
 
         private static float ValidatePercentage(float? value, float fallback)
